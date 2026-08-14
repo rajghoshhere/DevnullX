@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     database_url: str
+    vehicle_verification_provider: str = "fake"
+    api_setu_base_url: str = ""
+    api_setu_api_key: str = ""
+    api_setu_client_id: str = ""
+    api_setu_timeout_seconds: float = 10.0
+    api_setu_max_attempts: int = 3
+    api_setu_backoff_seconds: float = 0.2
 
 
 @lru_cache

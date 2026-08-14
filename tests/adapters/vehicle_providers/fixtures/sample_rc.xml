@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<VehicleDetails>
+  <stautsMessage>OK</stautsMessage>
+  <rc_regn_no>MH12AB1234</rc_regn_no>
+  <rc_regn_dt>15-Mar-2022</rc_regn_dt>
+  <rc_owner_sr>1</rc_owner_sr>
+  <rc_owner_name>P*I*A S*A*</rc_owner_name>
+  <rc_f_name>R*M*S* S*A*</rc_f_name>
+  <rc_present_address>P*N* C*T*, M*H*R*S*T*A</rc_present_address>
+  <rc_permanent_address>P*N* C*T*, M*H*R*S*T*A</rc_permanent_address>
+  <rc_mobile_no>9*8*7*6*5*4*</rc_mobile_no>
+  <rc_vch_catg>HGV</rc_vch_catg>
+  <rc_owner_cd>1</rc_owner_cd>
+  <rc_vh_class_desc>Goods Carrier(HGV)</rc_vh_class_desc>
+  <rc_chasi_no>**T448030********</rc_chasi_no>
+  <rc_eng_no>****4019001</rc_eng_no>
+  <rc_maker_desc>TATA MOTORS LTD</rc_maker_desc>
+  <rc_maker_model>SIGNA 4825.T</rc_maker_model>
+  <rc_body_type_desc>TRUCK (OPEN BODY)</rc_body_type_desc>
+  <rc_fuel_desc>DIESEL</rc_fuel_desc>
+  <rc_color>WHITE</rc_color>
+  <rc_norms_desc>BS VI</rc_norms_desc>
+  <rc_fit_upto>14-Mar-2024</rc_fit_upto>
+  <rc_tax_upto>31-03-2024</rc_tax_upto>
+  <rc_financer>HDFC BANK LIMITED</rc_financer>
+  <rc_insurance_comp>ICICI LOMBARD GENERAL INSURANCE</rc_insurance_comp>
+  <rc_insurance_policy_no>3001/00000000/000/00</rc_insurance_policy_no>
+  <rc_insurance_upto>14-Mar-2023</rc_insurance_upto>
+  <rc_manu_month_yr>01/2022</rc_manu_month_yr>
+  <rc_unld_wt>12500</rc_unld_wt>
+  <rc_gvw>47500</rc_gvw>
+  <rc_no_cyl>6</rc_no_cyl>
+  <rc_cubic_cap>6700.00</rc_cubic_cap>
+  <rc_seat_cap>2</rc_seat_cap>
+  <rc_sleeper_cap>1</rc_sleeper_cap>
+  <rc_stand_cap>0</rc_stand_cap>
+  <rc_wheelbase>6800</rc_wheelbase>
+  <rc_registered_at>PUNE RTO, Maharashtra</rc_registered_at>
+  <rc_status_as_on>14-Aug-2026</rc_status_as_on>
+  <rc_pucc_upto>14-Mar-2023</rc_pucc_upto>
+  <rc_pucc_no>MH0123456789</rc_pucc_no>
+  <rc_status>ACTIVE</rc_status>
+  <rc_blacklist_status />
+  <rc_noc_details />
+  <rc_vh_class>0</rc_vh_class>
+</VehicleDetails>
