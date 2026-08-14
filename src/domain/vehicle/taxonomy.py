@@ -1,0 +1,25 @@
+from enum import StrEnum
+
+
+class FuelType(StrEnum):
+    DIESEL = "DIESEL"
+    CNG = "CNG"
+    LNG = "LNG"
+    ELECTRIC = "ELECTRIC"
+    HYDROGEN = "HYDROGEN"
+    OTHER = "OTHER"
+
+
+class BodyType(StrEnum):
+    OPEN = "OPEN"
+    FLATBED = "FLATBED"
+    HIGH_SIDE = "HIGH_SIDE"
+    CLOSED = "CLOSED"
+    CONTAINER = "CONTAINER"
+    TANKER = "TANKER"
+    REFRIGERATED = "REFRIGERATED"
+    TIPPER = "TIPPER"
+    CAR_CARRIER = "CAR_CARRIER"
+    LOG_CARRIER = "LOG_CARRIER"
+    CEMENT_MIXER = "CEMENT_MIXER"
+    SPECIAL_PURPOSE = "SPECIAL_PURPOSE"

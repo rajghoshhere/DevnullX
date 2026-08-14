@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from adapters.postgres.mappers import tenant_to_domain, tenant_to_model
 from adapters.postgres.models import TenantModel
 from domain.tenant.entities import Tenant
 
@@ -14,9 +15,7 @@ class PostgresTenantRepository:
         self._session = session
 
     async def add(self, tenant: Tenant) -> Tenant:
-        self._session.add(
-            TenantModel(id=tenant.id, name=tenant.name, created_at=tenant.created_at)
-        )
+        self._session.add(tenant_to_model(tenant))
         await self._session.flush()
         return tenant
 
@@ -27,4 +26,4 @@ class PostgresTenantRepository:
         model = result.scalar_one_or_none()
         if model is None:
             return None
-        return Tenant(id=model.id, name=model.name, created_at=model.created_at)
+        return tenant_to_domain(model)
