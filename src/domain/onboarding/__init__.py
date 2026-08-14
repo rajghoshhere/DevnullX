@@ -1,0 +1,1 @@
+"""Onboarding case domain (scaffolding)."""
