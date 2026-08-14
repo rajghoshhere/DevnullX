@@ -28,11 +28,29 @@ class TruckModel:
     id: UUID
     manufacturer_id: UUID
     name: str
+    regulatory_category_id: UUID | None
+    truck_segment_id: UUID | None
+    truck_configuration_id: UUID | None
+    body_type_id: UUID | None
+    axle_configuration_id: UUID | None
+    powertrain_id: UUID | None
+    truck_application_id: UUID | None
     created_at: datetime
     updated_at: datetime
 
     @staticmethod
-    def create(*, manufacturer_id: UUID, name: str) -> TruckModel:
+    def create(
+        *,
+        manufacturer_id: UUID,
+        name: str,
+        regulatory_category_id: UUID | None = None,
+        truck_segment_id: UUID | None = None,
+        truck_configuration_id: UUID | None = None,
+        body_type_id: UUID | None = None,
+        axle_configuration_id: UUID | None = None,
+        powertrain_id: UUID | None = None,
+        truck_application_id: UUID | None = None,
+    ) -> TruckModel:
         stripped = name.strip()
         if not stripped:
             raise ValueError("truck model name is required")
@@ -41,6 +59,13 @@ class TruckModel:
             id=uuid4(),
             manufacturer_id=manufacturer_id,
             name=stripped,
+            regulatory_category_id=regulatory_category_id,
+            truck_segment_id=truck_segment_id,
+            truck_configuration_id=truck_configuration_id,
+            body_type_id=body_type_id,
+            axle_configuration_id=axle_configuration_id,
+            powertrain_id=powertrain_id,
+            truck_application_id=truck_application_id,
             created_at=now,
             updated_at=now,
         )

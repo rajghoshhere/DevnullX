@@ -1,7 +1,6 @@
 from datetime import date
 
 from adapters.postgres.vehicle_repository import PostgresVehicleRepository
-from domain.vehicle.taxonomy import BodyType, FuelType
 from tests.adapters.postgres.helpers import seed_graph
 
 
@@ -19,5 +18,5 @@ async def test_vehicle_repository_round_trip(db_session) -> None:
     assert found.unladen_weight_kg == 12500
     assert found.engine_cc == 6700
     assert found.cylinder_count == 6
-    assert found.fuel_type == FuelType.DIESEL
-    assert found.body_type == BodyType.OPEN
+    assert found.fuel_type == "DIESEL"
+    assert found.body_type == "OPEN"

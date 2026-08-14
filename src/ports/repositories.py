@@ -7,6 +7,7 @@ from domain.fleet.entities import Fleet
 from domain.owner.entities import FleetOwner
 from domain.tenant.entities import Tenant
 from domain.truck.entities import Manufacturer, TruckModel
+from domain.truck.taxonomy import TaxonomyTerm
 from domain.vehicle.entities import Vehicle
 
 
@@ -38,6 +39,16 @@ class TruckModelRepository(Protocol):
     async def add(self, truck_model: TruckModel) -> TruckModel: ...
 
     async def get_by_id(self, truck_model_id: UUID) -> TruckModel | None: ...
+
+
+class TaxonomyRepository(Protocol):
+    async def add(self, table_name: str, term: TaxonomyTerm) -> TaxonomyTerm: ...
+
+    async def get_by_code(self, table_name: str, code: str) -> TaxonomyTerm | None: ...
+
+    async def get_by_id(self, table_name: str, term_id: UUID) -> TaxonomyTerm | None: ...
+
+    async def list_active(self, table_name: str) -> list[TaxonomyTerm]: ...
 
 
 class VehicleRepository(Protocol):

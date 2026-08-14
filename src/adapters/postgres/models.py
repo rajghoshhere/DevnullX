@@ -18,8 +18,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from adapters.postgres.base import Base
+from adapters.postgres.taxonomy_models import (
+    AxleConfigurationModel,
+    BodyTypeModel,
+    PowertrainModel,
+    RegulatoryCategoryModel,
+    TruckApplicationModel,
+    TruckConfigurationModel,
+    TruckSegmentModel,
+)
 from domain.vehicle.states import VehicleStatus
-from domain.vehicle.taxonomy import BodyType, FuelType
 
 
 class TenantModel(Base):
@@ -83,7 +91,16 @@ class ManufacturerModel(Base):
 
 class TruckModelRecord(Base):
     __tablename__ = "truck_models"
-    __table_args__ = (Index("ix_truck_models_manufacturer_id", "manufacturer_id"),)
+    __table_args__ = (
+        Index("ix_truck_models_manufacturer_id", "manufacturer_id"),
+        Index("ix_truck_models_regulatory_category_id", "regulatory_category_id"),
+        Index("ix_truck_models_truck_segment_id", "truck_segment_id"),
+        Index("ix_truck_models_truck_configuration_id", "truck_configuration_id"),
+        Index("ix_truck_models_body_type_id", "body_type_id"),
+        Index("ix_truck_models_axle_configuration_id", "axle_configuration_id"),
+        Index("ix_truck_models_powertrain_id", "powertrain_id"),
+        Index("ix_truck_models_truck_application_id", "truck_application_id"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     manufacturer_id: Mapped[UUID] = mapped_column(
@@ -92,11 +109,53 @@ class TruckModelRecord(Base):
         nullable=False,
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    regulatory_category_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("regulatory_categories.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    truck_segment_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("truck_segments.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    truck_configuration_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("truck_configurations.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    body_type_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("body_types.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    axle_configuration_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("axle_configurations.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    powertrain_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("powertrains.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    truck_application_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("truck_applications.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     manufacturer: Mapped[ManufacturerModel] = relationship(back_populates="truck_models")
     vehicles: Mapped[list[VehicleModel]] = relationship(back_populates="truck_model")
+    regulatory_category: Mapped[RegulatoryCategoryModel | None] = relationship()
+    truck_segment: Mapped[TruckSegmentModel | None] = relationship()
+    truck_configuration: Mapped[TruckConfigurationModel | None] = relationship()
+    body_type: Mapped[BodyTypeModel | None] = relationship()
+    axle_configuration: Mapped[AxleConfigurationModel | None] = relationship()
+    powertrain: Mapped[PowertrainModel | None] = relationship()
+    truck_application: Mapped[TruckApplicationModel | None] = relationship()
 
 
 class VehicleModel(Base):
@@ -137,14 +196,8 @@ class VehicleModel(Base):
     unladen_weight_kg: Mapped[int | None] = mapped_column(Integer, nullable=True)
     engine_cc: Mapped[int | None] = mapped_column(Integer, nullable=True)
     cylinder_count: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
-    fuel_type: Mapped[FuelType | None] = mapped_column(
-        Enum(FuelType, name="fuel_type", native_enum=False, length=32),
-        nullable=True,
-    )
-    body_type: Mapped[BodyType | None] = mapped_column(
-        Enum(BodyType, name="body_type", native_enum=False, length=32),
-        nullable=True,
-    )
+    fuel_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    body_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
     vehicle_status: Mapped[VehicleStatus] = mapped_column(
         Enum(VehicleStatus, name="vehicle_status", native_enum=False, length=32),
         nullable=False,

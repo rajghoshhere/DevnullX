@@ -20,9 +20,7 @@ class PostgresTenantRepository:
         return tenant
 
     async def get_by_id(self, tenant_id: UUID) -> Tenant | None:
-        result = await self._session.execute(
-            select(TenantModel).where(TenantModel.id == tenant_id)
-        )
+        result = await self._session.execute(select(TenantModel).where(TenantModel.id == tenant_id))
         model = result.scalar_one_or_none()
         if model is None:
             return None

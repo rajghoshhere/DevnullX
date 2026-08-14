@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test migrate migrate-down up down logs
+.PHONY: install lint format typecheck test migrate migrate-down seed-taxonomy up down logs
 
 PYTHON ?= python3
 
@@ -25,6 +25,9 @@ migrate:
 
 migrate-down:
 	.venv/bin/alembic downgrade -1
+
+seed-taxonomy:
+	PYTHONPATH=src .venv/bin/python scripts/seed_taxonomy.py
 
 up:
 	docker compose --env-file .env up --build

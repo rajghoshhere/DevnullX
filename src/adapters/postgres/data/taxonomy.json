@@ -1,0 +1,120 @@
+{
+  "regulatory_categories": [
+    {
+      "code": "N1",
+      "name": "N1",
+      "description": "Gross vehicle weight up to 3.5 tonnes.",
+      "sort_order": 10
+    },
+    {
+      "code": "N2",
+      "name": "N2",
+      "description": "Gross vehicle weight greater than 3.5 tonnes and up to 12 tonnes.",
+      "sort_order": 20
+    },
+    {
+      "code": "N3",
+      "name": "N3",
+      "description": "Gross vehicle weight greater than 12 tonnes.",
+      "sort_order": 30
+    }
+  ],
+  "truck_segments": [
+    {
+      "code": "LCV",
+      "name": "Light Commercial Vehicle",
+      "description": "Business segment for lighter goods vehicles.",
+      "sort_order": 10
+    },
+    {
+      "code": "ICV",
+      "name": "Intermediate Commercial Vehicle",
+      "description": "Business segment between light and heavy commercial vehicles.",
+      "sort_order": 20
+    },
+    {
+      "code": "MHCV",
+      "name": "M&HCV",
+      "description": "Medium and heavy commercial vehicle segment.",
+      "sort_order": 30
+    },
+    {
+      "code": "HCV",
+      "name": "Heavy Commercial Vehicle",
+      "description": "Business segment for heavy goods vehicles.",
+      "sort_order": 40
+    }
+  ],
+  "truck_configurations": [
+    {
+      "code": "RIGID",
+      "name": "Rigid",
+      "description": "Fixed cargo body on a single chassis.",
+      "sort_order": 10
+    },
+    {
+      "code": "TRACTOR",
+      "name": "Tractor",
+      "description": "Prime mover intended to haul a trailer.",
+      "sort_order": 20
+    },
+    {
+      "code": "TIPPER",
+      "name": "Tipper",
+      "description": "Configuration built for tipping / dump operation.",
+      "sort_order": 30
+    },
+    {
+      "code": "SPECIAL_PURPOSE",
+      "name": "Special purpose",
+      "description": "Non-standard vocational configuration.",
+      "sort_order": 40
+    },
+    {
+      "code": "TRACTOR_TRAILER",
+      "name": "Tractor-trailer",
+      "description": "Articulated tractor and trailer combination.",
+      "sort_order": 50
+    }
+  ],
+  "body_types": [
+    {"code": "OPEN", "name": "Open", "description": "Open cargo body.", "sort_order": 10},
+    {"code": "FLATBED", "name": "Flatbed", "description": "Flat cargo deck.", "sort_order": 20},
+    {"code": "HIGH_SIDE", "name": "High side", "description": "Open body with high side walls.", "sort_order": 30},
+    {"code": "CLOSED", "name": "Closed", "description": "Fully enclosed cargo body.", "sort_order": 40},
+    {"code": "CONTAINER", "name": "Container", "description": "Container-carrying body.", "sort_order": 50},
+    {"code": "TANKER", "name": "Tanker", "description": "Tank body for liquids or bulk.", "sort_order": 60},
+    {"code": "REFRIGERATED", "name": "Refrigerated", "description": "Temperature-controlled cargo body.", "sort_order": 70},
+    {"code": "TIPPER", "name": "Tipper", "description": "Tipping / dump body.", "sort_order": 80},
+    {"code": "CAR_CARRIER", "name": "Car carrier", "description": "Vehicle-transport body.", "sort_order": 90},
+    {"code": "LOG_CARRIER", "name": "Log carrier", "description": "Body for timber or logs.", "sort_order": 100},
+    {"code": "CEMENT_MIXER", "name": "Cement mixer", "description": "Transit mixer body.", "sort_order": 110},
+    {"code": "SPECIAL_PURPOSE", "name": "Special purpose", "description": "Non-standard vocational body.", "sort_order": 120}
+  ],
+  "axle_configurations": [
+    {"code": "4X2", "name": "4x2", "description": "Two axles, one driven.", "sort_order": 10},
+    {"code": "6X2", "name": "6x2", "description": "Three axles, one driven.", "sort_order": 20},
+    {"code": "6X4", "name": "6x4", "description": "Three axles, two driven.", "sort_order": 30},
+    {"code": "8X2", "name": "8x2", "description": "Four axles, one driven.", "sort_order": 40},
+    {"code": "8X4", "name": "8x4", "description": "Four axles, two driven.", "sort_order": 50}
+  ],
+  "powertrains": [
+    {"code": "DIESEL", "name": "Diesel", "description": "Compression-ignition diesel powertrain.", "sort_order": 10},
+    {"code": "CNG", "name": "CNG", "description": "Compressed natural gas powertrain.", "sort_order": 20},
+    {"code": "LNG", "name": "LNG", "description": "Liquefied natural gas powertrain.", "sort_order": 30},
+    {"code": "ELECTRIC", "name": "Electric", "description": "Battery-electric powertrain.", "sort_order": 40},
+    {"code": "HYDROGEN", "name": "Hydrogen", "description": "Hydrogen fuel-cell or combustion powertrain.", "sort_order": 50},
+    {"code": "OTHER", "name": "Other", "description": "Powertrain not covered by the named types.", "sort_order": 60}
+  ],
+  "truck_applications": [
+    {"code": "HAULAGE", "name": "Haulage", "description": "General goods haulage.", "sort_order": 10},
+    {"code": "TIPPING", "name": "Tipping", "description": "Construction and bulk tipping work.", "sort_order": 20},
+    {"code": "TANKER", "name": "Tanker", "description": "Liquid or bulk tanker operations.", "sort_order": 30},
+    {"code": "CONTAINER", "name": "Container", "description": "Container transport.", "sort_order": 40},
+    {"code": "REFRIGERATED", "name": "Refrigerated", "description": "Temperature-controlled distribution.", "sort_order": 50},
+    {"code": "CAR_CARRIER", "name": "Car carrier", "description": "Finished-vehicle transport.", "sort_order": 60},
+    {"code": "MIXER", "name": "Mixer", "description": "Cement / concrete mixer operations.", "sort_order": 70},
+    {"code": "LOG_CARRIER", "name": "Log carrier", "description": "Timber and log transport.", "sort_order": 80},
+    {"code": "SPECIAL_PURPOSE", "name": "Special purpose", "description": "Vocational or non-standard application.", "sort_order": 90}
+  ]
+}
