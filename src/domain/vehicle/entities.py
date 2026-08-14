@@ -7,7 +7,6 @@ from uuid import UUID, uuid4
 from domain.tenant.entities import utc_now
 from domain.vehicle.registration import normalize_registration_number
 from domain.vehicle.states import VehicleStatus
-from domain.vehicle.taxonomy import BodyType, FuelType
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,8 +23,8 @@ class Vehicle:
     unladen_weight_kg: int | None
     engine_cc: int | None
     cylinder_count: int | None
-    fuel_type: FuelType | None
-    body_type: BodyType | None
+    fuel_type: str | None
+    body_type: str | None
     vehicle_status: VehicleStatus
     created_at: datetime
     updated_at: datetime
@@ -43,8 +42,8 @@ class Vehicle:
         unladen_weight_kg: int | None = None,
         engine_cc: int | None = None,
         cylinder_count: int | None = None,
-        fuel_type: FuelType | None = None,
-        body_type: BodyType | None = None,
+        fuel_type: str | None = None,
+        body_type: str | None = None,
         vehicle_status: VehicleStatus = VehicleStatus.DRAFT,
     ) -> Vehicle:
         now = utc_now()

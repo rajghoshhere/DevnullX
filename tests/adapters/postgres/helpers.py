@@ -12,7 +12,6 @@ from domain.tenant.entities import Tenant
 from domain.truck.entities import Manufacturer, TruckModel
 from domain.vehicle.entities import Vehicle
 from domain.vehicle.states import VehicleStatus
-from domain.vehicle.taxonomy import BodyType, FuelType
 
 
 async def seed_graph(db_session, *, registration_number: str = "MH12AB1234"):
@@ -32,8 +31,8 @@ async def seed_graph(db_session, *, registration_number: str = "MH12AB1234"):
         unladen_weight_kg=12500,
         engine_cc=6700,
         cylinder_count=6,
-        fuel_type=FuelType.DIESEL,
-        body_type=BodyType.OPEN,
+        fuel_type="DIESEL",
+        body_type="OPEN",
         vehicle_status=VehicleStatus.DRAFT,
     )
 

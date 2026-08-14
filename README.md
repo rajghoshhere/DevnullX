@@ -84,9 +84,10 @@ make typecheck
 ```bash
 make migrate          # alembic upgrade head
 make migrate-down     # alembic downgrade -1
+make seed-taxonomy    # upsert truck taxonomy reference data
 ```
 
-Inside Compose, the API container runs `alembic upgrade head` on startup.
+Inside Compose, the API container runs `alembic upgrade head` on startup. Taxonomy codes live in PostgreSQL reference tables (`body_types`, `powertrains`, and related tables), not in Python enums. Add new values by inserting rows or extending `src/adapters/postgres/data/taxonomy.json` and re-running the seed script.
 
 ## Ports (not implemented yet)
 
