@@ -20,3 +20,16 @@ async def test_vehicle_repository_round_trip(db_session) -> None:
     assert found.cylinder_count == 6
     assert found.fuel_type == "DIESEL"
     assert found.body_type == "OPEN"
+
+
+async def test_vehicle_repository_update_persists_status(db_session) -> None:
+    _tenant, _owner, _fleet, _manufacturer, _truck_model, vehicle = await seed_graph(db_session)
+    repo = PostgresVehicleRepository(db_session)
+
+    submitted = vehicle.submit()
+    await repo.update(submitted)
+    await db_session.flush()
+
+    found = await repo.get_by_id(vehicle.id)
+    assert found is not None
+    assert found.vehicle_status.value == "SUBMITTED"

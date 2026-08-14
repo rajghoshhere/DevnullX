@@ -1,1 +1,4 @@
-"""External vehicle verification adapters (not implemented in this foundation)."""
+from adapters.vehicle_providers.fake import FakeVehicleVerificationProvider
+
+__all__ = ["FakeVehicleVerificationProvider"]
+

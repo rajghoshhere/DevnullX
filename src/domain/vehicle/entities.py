@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from uuid import UUID, uuid4
 
 from domain.tenant.entities import utc_now
+from domain.vehicle.exceptions import InvalidVehicleTransition
 from domain.vehicle.registration import normalize_registration_number
 from domain.vehicle.states import VehicleStatus
+from domain.vehicle.transitions import can_transition
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +46,6 @@ class Vehicle:
         cylinder_count: int | None = None,
         fuel_type: str | None = None,
         body_type: str | None = None,
-        vehicle_status: VehicleStatus = VehicleStatus.DRAFT,
     ) -> Vehicle:
         now = utc_now()
         return Vehicle(
@@ -62,7 +63,28 @@ class Vehicle:
             cylinder_count=cylinder_count,
             fuel_type=fuel_type,
             body_type=body_type,
-            vehicle_status=vehicle_status,
+            vehicle_status=VehicleStatus.DRAFT,
             created_at=now,
             updated_at=now,
         )
+
+    def capture_registration(self, registration_number: str) -> Vehicle:
+        stripped = registration_number.strip()
+        if not stripped:
+            raise ValueError("registration number is required")
+        return replace(
+            self,
+            registration_number=stripped,
+            normalized_registration_number=normalize_registration_number(stripped),
+            updated_at=utc_now(),
+        )
+
+    def transition_to(self, target: VehicleStatus) -> Vehicle:
+        if not can_transition(self.vehicle_status, target):
+            raise InvalidVehicleTransition(self.vehicle_status, target)
+        return replace(self, vehicle_status=target, updated_at=utc_now())
+
+    def submit(self) -> Vehicle:
+        if not self.registration_number:
+            raise ValueError("registration number is required to submit a vehicle")
+        return self.transition_to(VehicleStatus.SUBMITTED)

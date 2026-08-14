@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from adapters.postgres.session import dispose_engine
+from api.errors import register_error_handlers
 from api.middleware import RequestIdMiddleware
 from api.routes.health import router as health_router
+from api.routes.onboarding import router as onboarding_router
 from config.logging import configure_logging
 from config.settings import get_settings
 
@@ -25,5 +27,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     application.add_middleware(RequestIdMiddleware)
+    register_error_handlers(application)
     application.include_router(health_router)
+    application.include_router(onboarding_router)
     return application
