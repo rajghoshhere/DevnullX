@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from adapters.postgres import models as _models  # noqa: F401
 from adapters.postgres.base import Base
 from adapters.postgres.session import get_db_session
 from config.settings import get_settings
@@ -25,10 +26,13 @@ def settings():
 async def engine(settings) -> AsyncIterator[AsyncEngine]:
     engine = create_async_engine(settings.database_url, pool_pre_ping=True)
     async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
         await connection.run_sync(Base.metadata.create_all)
     try:
         yield engine
     finally:
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.drop_all)
         await engine.dispose()
 
 

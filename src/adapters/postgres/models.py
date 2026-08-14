@@ -1,12 +1,25 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, String, Uuid
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import (
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Index,
+    Integer,
+    SmallInteger,
+    String,
+    UniqueConstraint,
+    Uuid,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from adapters.postgres.base import Base
+from domain.vehicle.states import VehicleStatus
+from domain.vehicle.taxonomy import BodyType, FuelType
 
 
 class TenantModel(Base):
@@ -15,3 +28,130 @@ class TenantModel(Base):
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    fleet_owners: Mapped[list[FleetOwnerModel]] = relationship(back_populates="tenant")
+    fleets: Mapped[list[FleetModel]] = relationship(back_populates="tenant")
+    vehicles: Mapped[list[VehicleModel]] = relationship(back_populates="tenant")
+
+
+class FleetOwnerModel(Base):
+    __tablename__ = "fleet_owners"
+    __table_args__ = (Index("ix_fleet_owners_tenant_id", "tenant_id"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    tenant: Mapped[TenantModel] = relationship(back_populates="fleet_owners")
+
+
+class FleetModel(Base):
+    __tablename__ = "fleets"
+    __table_args__ = (Index("ix_fleets_tenant_id", "tenant_id"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    tenant: Mapped[TenantModel] = relationship(back_populates="fleets")
+    vehicles: Mapped[list[VehicleModel]] = relationship(back_populates="fleet")
+
+
+class ManufacturerModel(Base):
+    __tablename__ = "manufacturers"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    truck_models: Mapped[list[TruckModelRecord]] = relationship(back_populates="manufacturer")
+
+
+class TruckModelRecord(Base):
+    __tablename__ = "truck_models"
+    __table_args__ = (Index("ix_truck_models_manufacturer_id", "manufacturer_id"),)
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    manufacturer_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("manufacturers.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    manufacturer: Mapped[ManufacturerModel] = relationship(back_populates="truck_models")
+    vehicles: Mapped[list[VehicleModel]] = relationship(back_populates="truck_model")
+
+
+class VehicleModel(Base):
+    __tablename__ = "vehicles"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id",
+            "normalized_registration_number",
+            name="uq_vehicles_tenant_normalized_registration",
+        ),
+        Index("ix_vehicles_tenant_id", "tenant_id"),
+        Index("ix_vehicles_fleet_id", "fleet_id"),
+        Index("ix_vehicles_truck_model_id", "truck_model_id"),
+        Index("ix_vehicles_vehicle_status", "vehicle_status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    fleet_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("fleets.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    truck_model_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("truck_models.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    registration_number: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    normalized_registration_number: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    registration_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    manufacturing_month_year: Mapped[date | None] = mapped_column(Date, nullable=True)
+    gvw_kg: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    unladen_weight_kg: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    engine_cc: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cylinder_count: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    fuel_type: Mapped[FuelType | None] = mapped_column(
+        Enum(FuelType, name="fuel_type", native_enum=False, length=32),
+        nullable=True,
+    )
+    body_type: Mapped[BodyType | None] = mapped_column(
+        Enum(BodyType, name="body_type", native_enum=False, length=32),
+        nullable=True,
+    )
+    vehicle_status: Mapped[VehicleStatus] = mapped_column(
+        Enum(VehicleStatus, name="vehicle_status", native_enum=False, length=32),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    tenant: Mapped[TenantModel] = relationship(back_populates="vehicles")
+    fleet: Mapped[FleetModel] = relationship(back_populates="vehicles")
+    truck_model: Mapped[TruckModelRecord | None] = relationship(back_populates="vehicles")

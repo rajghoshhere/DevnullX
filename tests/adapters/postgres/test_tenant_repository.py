@@ -1,5 +1,5 @@
-from domain.tenant.entities import Tenant
 from adapters.postgres.tenant_repository import PostgresTenantRepository
+from domain.tenant.entities import Tenant
 
 
 async def test_postgres_tenant_repository_round_trip(db_session) -> None:

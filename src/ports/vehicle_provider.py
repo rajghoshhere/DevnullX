@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from domain.verification.types import VerificationContext, VehicleVerificationResult
+from domain.verification.types import VehicleVerificationResult, VerificationContext
 
 
 class VehicleVerificationProvider(Protocol):
