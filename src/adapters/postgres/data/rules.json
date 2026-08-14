@@ -1,0 +1,101 @@
+[
+  {
+    "rule_id": "RULE-GVW-N-CATEGORY-001",
+    "name": "Regulatory category from GVW",
+    "version": "1.0.0",
+    "rule_type": "gvw_threshold",
+    "priority": 10,
+    "author": "platform",
+    "expression": {
+      "kind": "gvw_threshold",
+      "attribute": "regulatory_category",
+      "input": "gvw_kg",
+      "bands": [
+        {"max_inclusive": 3500, "code": "N1"},
+        {"max_inclusive": 12000, "code": "N2"},
+        {"max_inclusive": null, "code": "N3"}
+      ]
+    }
+  },
+  {
+    "rule_id": "RULE-GVW-SEGMENT-001",
+    "name": "Commercial segment from GVW",
+    "version": "1.0.0",
+    "rule_type": "gvw_threshold",
+    "priority": 20,
+    "author": "platform",
+    "expression": {
+      "kind": "gvw_threshold",
+      "attribute": "truck_segment",
+      "input": "gvw_kg",
+      "bands": [
+        {"max_inclusive": 7500, "code": "LCV"},
+        {"max_inclusive": 16200, "code": "ICV"},
+        {"max_inclusive": 25000, "code": "MHCV"},
+        {"max_inclusive": null, "code": "HCV"}
+      ]
+    }
+  },
+  {
+    "rule_id": "RULE-BODY-TYPE-ALIAS-001",
+    "name": "Body type normalization",
+    "version": "1.0.0",
+    "rule_type": "alias_map",
+    "priority": 30,
+    "author": "platform",
+    "expression": {
+      "kind": "alias_map",
+      "attribute": "body_type",
+      "input": "raw_body_text",
+      "aliases": {
+        "OPEN": ["TRUCK (OPEN BODY)", "OPEN BODY", "OPEN"],
+        "FLATBED": ["FLAT BED", "FLATBED"],
+        "HIGH_SIDE": ["HIGH SIDE", "HIGHSIDE"],
+        "CLOSED": ["CLOSED BODY", "CLOSED", "VAN"],
+        "CONTAINER": ["CONTAINER"],
+        "TANKER": ["TANKER", "TANK"],
+        "REFRIGERATED": ["REFRIGERATED", "REEFER"],
+        "TIPPER": ["TIPPER", "DUMPER"],
+        "CAR_CARRIER": ["CAR CARRIER", "CAR-CARRIER"],
+        "LOG_CARRIER": ["LOG CARRIER", "LOG-CARRIER"],
+        "CEMENT_MIXER": ["CEMENT MIXER", "TRANSIT MIXER", "MIXER"],
+        "SPECIAL_PURPOSE": ["SPECIAL PURPOSE", "SPECIAL_PURPOSE"]
+      }
+    }
+  },
+  {
+    "rule_id": "RULE-MANUFACTURER-ALIAS-001",
+    "name": "Manufacturer normalization",
+    "version": "1.0.0",
+    "rule_type": "alias_map",
+    "priority": 40,
+    "author": "platform",
+    "expression": {
+      "kind": "alias_map",
+      "attribute": "manufacturer",
+      "input": "raw_manufacturer",
+      "aliases": {
+        "TATA_MOTORS": ["TATA MOTORS LTD", "TATA MOTORS LIMITED", "TATA MOTORS", "TATA"],
+        "ASHOK_LEYLAND": ["ASHOK LEYLAND LTD", "ASHOK LEYLAND LIMITED", "ASHOK LEYLAND"],
+        "MAHINDRA": ["MAHINDRA AND MAHINDRA", "MAHINDRA & MAHINDRA", "MAHINDRA"],
+        "EICHER": ["EICHER MOTORS", "EICHER", "VE COMMERCIAL VEHICLES"],
+        "BHARATBENZ": ["BHARAT BENZ", "BHARATBENZ"]
+      }
+    }
+  },
+  {
+    "rule_id": "RULE-ESTIMATED-PAYLOAD-001",
+    "name": "Estimated payload from GVW minus unladen weight",
+    "version": "1.0.0",
+    "rule_type": "numeric_difference",
+    "priority": 50,
+    "author": "platform",
+    "expression": {
+      "kind": "numeric_difference",
+      "attribute": "estimated_payload_kg",
+      "minuend": "gvw_kg",
+      "subtrahend": "unladen_weight_kg",
+      "derive_if_present": true
+    }
+  }
+]

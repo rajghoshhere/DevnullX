@@ -1,1 +1,1 @@
-"""Applies deterministic taxonomy rules. Implementation comes in a later step."""
+"""Applies deterministic taxonomy rules via domain.enrichment.RuleEngine."""

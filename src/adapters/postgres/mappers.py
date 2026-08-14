@@ -4,10 +4,13 @@ from adapters.postgres.models import (
     FleetModel,
     FleetOwnerModel,
     ManufacturerModel,
+    RuleMasterModel,
     TenantModel,
     TruckModelRecord,
+    VehicleAttributeProvenanceModel,
     VehicleModel,
 )
+from domain.enrichment.models import Rule, VehicleAttributeProvenance
 from domain.fleet.entities import Fleet
 from domain.owner.entities import FleetOwner
 from domain.tenant.entities import Tenant
@@ -166,4 +169,79 @@ def vehicle_to_domain(model: VehicleModel) -> Vehicle:
         vehicle_status=model.vehicle_status,
         created_at=model.created_at,
         updated_at=model.updated_at,
+    )
+
+
+def rule_to_model(rule: Rule) -> RuleMasterModel:
+    from adapters.postgres.rule_seed import rule_row_id
+
+    return RuleMasterModel(
+        id=rule_row_id(rule.rule_id, rule.version),
+        rule_id=rule.rule_id,
+        name=rule.name,
+        version=rule.version,
+        rule_type=rule.rule_type,
+        expression=dict(rule.expression),
+        priority=rule.priority,
+        active=rule.active,
+        effective_from=rule.effective_from,
+        effective_to=rule.effective_to,
+        author=rule.author,
+        created_at=rule.created_at,
+        updated_at=rule.updated_at,
+    )
+
+
+def rule_to_domain(model: RuleMasterModel) -> Rule:
+    return Rule(
+        rule_id=model.rule_id,
+        name=model.name,
+        version=model.version,
+        rule_type=model.rule_type,
+        expression=dict(model.expression),
+        priority=model.priority,
+        active=model.active,
+        effective_from=model.effective_from,
+        effective_to=model.effective_to,
+        author=model.author,
+        created_at=model.created_at,
+        updated_at=model.updated_at,
+    )
+
+
+def provenance_to_model(row: VehicleAttributeProvenance) -> VehicleAttributeProvenanceModel:
+    return VehicleAttributeProvenanceModel(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        vehicle_id=row.vehicle_id,
+        attribute=row.attribute,
+        value=row.value,
+        source=row.source,
+        source_system=row.source_system,
+        source_field=row.source_field,
+        source_record_id=row.source_record_id,
+        transformation_type=row.transformation_type,
+        rule_id=row.rule_id,
+        rule_version=row.rule_version,
+        confidence=row.confidence,
+        created_at=row.created_at,
+    )
+
+
+def provenance_to_domain(model: VehicleAttributeProvenanceModel) -> VehicleAttributeProvenance:
+    return VehicleAttributeProvenance(
+        id=model.id,
+        tenant_id=model.tenant_id,
+        vehicle_id=model.vehicle_id,
+        attribute=model.attribute,
+        value=model.value,
+        source=model.source,
+        source_system=model.source_system,
+        source_field=model.source_field,
+        source_record_id=model.source_record_id,
+        transformation_type=model.transformation_type,
+        rule_id=model.rule_id,
+        rule_version=model.rule_version,
+        confidence=model.confidence,
+        created_at=model.created_at,
     )

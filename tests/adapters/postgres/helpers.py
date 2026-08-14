@@ -11,7 +11,6 @@ from domain.owner.entities import FleetOwner
 from domain.tenant.entities import Tenant
 from domain.truck.entities import Manufacturer, TruckModel
 from domain.vehicle.entities import Vehicle
-from domain.vehicle.states import VehicleStatus
 
 
 async def seed_graph(db_session, *, registration_number: str = "MH12AB1234"):
@@ -33,7 +32,6 @@ async def seed_graph(db_session, *, registration_number: str = "MH12AB1234"):
         cylinder_count=6,
         fuel_type="DIESEL",
         body_type="OPEN",
-        vehicle_status=VehicleStatus.DRAFT,
     )
 
     await PostgresTenantRepository(db_session).add(tenant)

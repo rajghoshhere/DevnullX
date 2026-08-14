@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from domain.enrichment.models import Rule, VehicleAttributeProvenance
 from domain.fleet.entities import Fleet
 from domain.owner.entities import FleetOwner
 from domain.tenant.entities import Tenant
@@ -61,3 +64,17 @@ class VehicleRepository(Protocol):
         tenant_id: UUID,
         normalized_registration_number: str,
     ) -> Vehicle | None: ...
+
+    async def update(self, vehicle: Vehicle) -> Vehicle: ...
+
+
+class RuleRepository(Protocol):
+    async def add(self, rule: Rule) -> Rule: ...
+
+    async def list_effective(self, *, at: datetime) -> Sequence[Rule]: ...
+
+
+class ProvenanceRepository(Protocol):
+    async def add(self, row: VehicleAttributeProvenance) -> VehicleAttributeProvenance: ...
+
+    async def list_for_vehicle(self, vehicle_id: UUID) -> Sequence[VehicleAttributeProvenance]: ...

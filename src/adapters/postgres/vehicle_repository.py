@@ -43,3 +43,13 @@ class PostgresVehicleRepository:
         if model is None:
             return None
         return vehicle_to_domain(model)
+
+    async def update(self, vehicle: Vehicle) -> Vehicle:
+        model = await self._session.get(VehicleModel, vehicle.id)
+        if model is None:
+            raise ValueError("vehicle not found")
+        mapped = vehicle_to_model(vehicle)
+        for column in VehicleModel.__table__.columns:
+            setattr(model, column.key, getattr(mapped, column.key))
+        await self._session.flush()
+        return vehicle
