@@ -49,52 +49,54 @@ def get_verification_provider() -> VehicleVerificationProvider:
     return FakeVehicleVerificationProvider()
 
 
-Tenants = Annotated[TenantRepository, Depends(get_tenant_repository)]
-Owners = Annotated[FleetOwnerRepository, Depends(get_fleet_owner_repository)]
-Fleets = Annotated[FleetRepository, Depends(get_fleet_repository)]
-Vehicles = Annotated[VehicleRepository, Depends(get_vehicle_repository)]
-VerificationProvider = Annotated[VehicleVerificationProvider, Depends(get_verification_provider)]
-
-
-def get_create_tenant(tenants: Tenants) -> CreateTenant:
+def get_create_tenant(
+    tenants: TenantRepository = Depends(get_tenant_repository),
+) -> CreateTenant:
     return CreateTenant(tenants)
 
 
-def get_create_fleet_owner(tenants: Tenants, owners: Owners) -> CreateFleetOwner:
+def get_create_fleet_owner(
+    tenants: TenantRepository = Depends(get_tenant_repository),
+    owners: FleetOwnerRepository = Depends(get_fleet_owner_repository),
+) -> CreateFleetOwner:
     return CreateFleetOwner(tenants, owners)
 
 
-def get_create_fleet(tenants: Tenants, fleets: Fleets) -> CreateFleet:
+def get_create_fleet(
+    tenants: TenantRepository = Depends(get_tenant_repository),
+    fleets: FleetRepository = Depends(get_fleet_repository),
+) -> CreateFleet:
     return CreateFleet(tenants, fleets)
 
 
-def get_create_vehicle(tenants: Tenants, fleets: Fleets, vehicles: Vehicles) -> CreateVehicle:
+def get_create_vehicle(
+    tenants: TenantRepository = Depends(get_tenant_repository),
+    fleets: FleetRepository = Depends(get_fleet_repository),
+    vehicles: VehicleRepository = Depends(get_vehicle_repository),
+) -> CreateVehicle:
     return CreateVehicle(tenants, fleets, vehicles)
 
 
 def get_submit_vehicle(
-    vehicles: Vehicles, provider: VerificationProvider
+    vehicles: VehicleRepository = Depends(get_vehicle_repository),
+    provider: VehicleVerificationProvider = Depends(get_verification_provider),
 ) -> SubmitVehicleForVerification:
     return SubmitVehicleForVerification(vehicles, provider)
 
 
-def get_fleet_owner(owners: Owners) -> GetFleetOwner:
+def get_fleet_owner(
+    owners: FleetOwnerRepository = Depends(get_fleet_owner_repository),
+) -> GetFleetOwner:
     return GetFleetOwner(owners)
 
 
-def get_fleet_query(fleets: Fleets) -> GetFleet:
+def get_fleet_query(
+    fleets: FleetRepository = Depends(get_fleet_repository),
+) -> GetFleet:
     return GetFleet(fleets)
 
 
-def get_vehicle_query(vehicles: Vehicles) -> GetVehicle:
+def get_vehicle_query(
+    vehicles: VehicleRepository = Depends(get_vehicle_repository),
+) -> GetVehicle:
     return GetVehicle(vehicles)
-
-
-CreateTenantUseCase = Annotated[CreateTenant, Depends(get_create_tenant)]
-CreateFleetOwnerUseCase = Annotated[CreateFleetOwner, Depends(get_create_fleet_owner)]
-CreateFleetUseCase = Annotated[CreateFleet, Depends(get_create_fleet)]
-CreateVehicleUseCase = Annotated[CreateVehicle, Depends(get_create_vehicle)]
-SubmitVehicleUseCase = Annotated[SubmitVehicleForVerification, Depends(get_submit_vehicle)]
-GetFleetOwnerUseCase = Annotated[GetFleetOwner, Depends(get_fleet_owner)]
-GetFleetUseCase = Annotated[GetFleet, Depends(get_fleet_query)]
-GetVehicleUseCase = Annotated[GetVehicle, Depends(get_vehicle_query)]

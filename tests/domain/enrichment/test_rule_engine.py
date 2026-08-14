@@ -185,13 +185,10 @@ def test_expired_rules_are_ignored() -> None:
     results = engine.evaluate([expired], VehicleFacts(gvw_kg=20000), at=FIXED_AT)
     assert results == []
     still_valid = gvw_category_rule(effective_to=FIXED_AT + timedelta(seconds=1))
-    assert (
-        _applied(
-            engine.evaluate([still_valid], VehicleFacts(gvw_kg=20000), at=FIXED_AT),
-            "regulatory_category",
-        ).value
-        == "N3"
-    )
+    assert _applied(
+        engine.evaluate([still_valid], VehicleFacts(gvw_kg=20000), at=FIXED_AT),
+        "regulatory_category",
+    ).value == "N3"
 
 
 def test_not_yet_effective_rules_are_ignored() -> None:

@@ -1,13 +1,6 @@
 from uuid import uuid4
 
 import pytest
-from tests.application.fakes import (
-    InMemoryFleetOwnerRepository,
-    InMemoryFleetRepository,
-    InMemoryTenantRepository,
-    InMemoryVehicleRepository,
-    seed_tenant_and_fleet,
-)
 
 from adapters.vehicle_providers.fake import FakeVehicleVerificationProvider
 from application.commands.create_fleet import CreateFleet
@@ -18,6 +11,13 @@ from application.commands.submit_vehicle_for_verification import SubmitVehicleFo
 from application.errors import ConflictError, InvalidStateError, NotFoundError
 from domain.tenant.entities import Tenant
 from domain.vehicle.states import VehicleStatus
+from tests.application.fakes import (
+    InMemoryFleetOwnerRepository,
+    InMemoryFleetRepository,
+    InMemoryTenantRepository,
+    InMemoryVehicleRepository,
+    seed_tenant_and_fleet,
+)
 
 
 async def test_create_tenant() -> None:
@@ -52,7 +52,9 @@ async def test_create_fleet() -> None:
     tenants = InMemoryTenantRepository()
     fleets = InMemoryFleetRepository()
     tenant = await tenants.add(Tenant.create("Acme Logistics"))
-    fleet = await CreateFleet(tenants, fleets).execute(tenant_id=tenant.id, name="North Fleet")
+    fleet = await CreateFleet(tenants, fleets).execute(
+        tenant_id=tenant.id, name="North Fleet"
+    )
     assert fleet.tenant_id == tenant.id
     assert fleet.name == "North Fleet"
 
@@ -91,7 +93,9 @@ async def test_create_vehicle_rejects_duplicate_registration() -> None:
     tenant, fleet, tenants, fleets = await seed_tenant_and_fleet()
     vehicles = InMemoryVehicleRepository()
     use_case = CreateVehicle(tenants, fleets, vehicles)
-    await use_case.execute(tenant_id=tenant.id, fleet_id=fleet.id, registration_number="MH12AB1234")
+    await use_case.execute(
+        tenant_id=tenant.id, fleet_id=fleet.id, registration_number="MH12AB1234"
+    )
     with pytest.raises(ConflictError, match="registration"):
         await use_case.execute(
             tenant_id=tenant.id, fleet_id=fleet.id, registration_number="mh-12-ab-1234"
@@ -155,9 +159,9 @@ async def test_submit_without_registration_is_invalid() -> None:
         fleet_id=fleet.id,
     )
     with pytest.raises(InvalidStateError, match="registration"):
-        await SubmitVehicleForVerification(vehicles, FakeVehicleVerificationProvider()).execute(
-            tenant_id=tenant.id, vehicle_id=created.id
-        )
+        await SubmitVehicleForVerification(
+            vehicles, FakeVehicleVerificationProvider()
+        ).execute(tenant_id=tenant.id, vehicle_id=created.id)
 
 
 async def test_submit_from_verified_is_invalid() -> None:

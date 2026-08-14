@@ -2,7 +2,9 @@ from domain.vehicle.states import VehicleStatus
 
 ALLOWED_TRANSITIONS: dict[VehicleStatus, frozenset[VehicleStatus]] = {
     VehicleStatus.DRAFT: frozenset({VehicleStatus.SUBMITTED, VehicleStatus.REJECTED}),
-    VehicleStatus.SUBMITTED: frozenset({VehicleStatus.VERIFICATION_PENDING, VehicleStatus.DRAFT}),
+    VehicleStatus.SUBMITTED: frozenset(
+        {VehicleStatus.VERIFICATION_PENDING, VehicleStatus.DRAFT}
+    ),
     VehicleStatus.VERIFICATION_PENDING: frozenset(
         {VehicleStatus.VERIFIED, VehicleStatus.MANUAL_REVIEW}
     ),
