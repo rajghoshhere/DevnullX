@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test migrate migrate-down seed-taxonomy up down logs
+.PHONY: install lint format typecheck test migrate migrate-down seed-taxonomy seed-rules up down logs
 
 PYTHON ?= python3
 
@@ -28,6 +28,9 @@ migrate-down:
 
 seed-taxonomy:
 	PYTHONPATH=src .venv/bin/python scripts/seed_taxonomy.py
+
+seed-rules:
+	PYTHONPATH=src .venv/bin/python scripts/seed_rules.py
 
 up:
 	docker compose --env-file .env up --build
