@@ -4,17 +4,21 @@ from datetime import date, datetime
 from uuid import UUID
 
 from sqlalchemy import (
+    Boolean,
     Date,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
     SmallInteger,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from adapters.postgres.base import Base
@@ -208,3 +212,67 @@ class VehicleModel(Base):
     tenant: Mapped[TenantModel] = relationship(back_populates="vehicles")
     fleet: Mapped[FleetModel] = relationship(back_populates="vehicles")
     truck_model: Mapped[TruckModelRecord | None] = relationship(back_populates="vehicles")
+    attribute_provenance: Mapped[list[VehicleAttributeProvenanceModel]] = relationship(
+        back_populates="vehicle"
+    )
+
+
+class RuleMasterModel(Base):
+    __tablename__ = "rule_master"
+    __table_args__ = (
+        UniqueConstraint("rule_id", "version", name="uq_rule_master_rule_id_version"),
+        Index("ix_rule_master_rule_type", "rule_type"),
+        Index("ix_rule_master_active_priority", "active", "priority"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    rule_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    version: Mapped[str] = mapped_column(String(32), nullable=False)
+    rule_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    expression: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    effective_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    effective_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    author: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class VehicleAttributeProvenanceModel(Base):
+    __tablename__ = "vehicle_attribute_provenance"
+    __table_args__ = (
+        Index("ix_vehicle_attribute_provenance_vehicle_id", "vehicle_id"),
+        Index("ix_vehicle_attribute_provenance_tenant_id", "tenant_id"),
+        Index(
+            "ix_vehicle_attribute_provenance_vehicle_attribute",
+            "vehicle_id",
+            "attribute",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    tenant_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("tenants.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    vehicle_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("vehicles.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    attribute: Mapped[str] = mapped_column(String(64), nullable=False)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_system: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_field: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source_record_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    transformation_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    rule_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    rule_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    vehicle: Mapped[VehicleModel] = relationship(back_populates="attribute_provenance")
