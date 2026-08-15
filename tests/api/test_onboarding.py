@@ -11,7 +11,7 @@ def _headers(tenant_id: str) -> dict[str, str]:
     return {"X-Tenant-ID": tenant_id}
 
 
-async def test_onboarding_happy_path_reaches_verified(client) -> None:
+async def test_onboarding_happy_path_populate_then_review(client) -> None:
     tenant = await _create_tenant(client)
     headers = _headers(tenant["id"])
 
@@ -29,29 +29,54 @@ async def test_onboarding_happy_path_reaches_verified(client) -> None:
         json={
             "fleet_id": fleet.json()["id"],
             "registration_number": "MH12AB1234",
-            "gvw_kg": 47500,
         },
         headers=headers,
     )
     assert vehicle.status_code == 201
     assert vehicle.json()["vehicle_status"] == "DRAFT"
 
+    populated = await client.post(
+        f"/v1/vehicles/{vehicle.json()['id']}/populate",
+        json={},
+        headers=headers,
+    )
+    assert populated.status_code == 200, populated.text
+    assert populated.json()["vehicle_status"] == "READY_FOR_REVIEW"
+    assert populated.json()["fuel_type"] == "DIESEL"
+    assert populated.json()["body_type"] == "OPEN"
+    assert populated.json()["gvw_kg"] == 47500
+
+    fetched = await client.get(f"/v1/vehicles/{vehicle.json()['id']}", headers=headers)
+    assert fetched.json()["vehicle_status"] == "READY_FOR_REVIEW"
+
+    reviewed = await client.post(
+        f"/v1/vehicles/{vehicle.json()['id']}/review",
+        json={"decision": "APPROVE"},
+        headers=headers,
+    )
+    assert reviewed.status_code == 200, reviewed.text
+    assert reviewed.json()["vehicle_status"] == "APPROVED"
+
+
+async def test_verify_alias_still_populates(client) -> None:
+    tenant = await _create_tenant(client, "Alias Co")
+    headers = _headers(tenant["id"])
+    fleet = await client.post("/v1/fleets", json={"name": "Fleet"}, headers=headers)
+    vehicle = await client.post(
+        "/v1/vehicles",
+        json={"fleet_id": fleet.json()["id"], "registration_number": "MH12AB1234"},
+        headers=headers,
+    )
     verified = await client.post(
         f"/v1/vehicles/{vehicle.json()['id']}/verify",
         json={},
         headers=headers,
     )
     assert verified.status_code == 200, verified.text
-    assert verified.json()["vehicle_status"] == "VERIFIED"
-
-    fetched = await client.get(f"/v1/vehicles/{vehicle.json()['id']}", headers=headers)
-    assert fetched.json()["vehicle_status"] == "VERIFIED"
-    assert fetched.json()["fuel_type"] == "DIESEL"
-    assert fetched.json()["body_type"] == "OPEN"
-    assert fetched.json()["gvw_kg"] == 47500
+    assert verified.json()["vehicle_status"] == "READY_FOR_REVIEW"
 
 
-async def test_verify_captures_registration_in_request_body(client) -> None:
+async def test_populate_captures_registration_in_request_body(client) -> None:
     tenant = await _create_tenant(client, "Capture Co")
     headers = _headers(tenant["id"])
     fleet = await client.post("/v1/fleets", json={"name": "Fleet"}, headers=headers)
@@ -60,18 +85,18 @@ async def test_verify_captures_registration_in_request_body(client) -> None:
         json={"fleet_id": fleet.json()["id"]},
         headers=headers,
     )
-    verified = await client.post(
-        f"/v1/vehicles/{vehicle.json()['id']}/verify",
+    populated = await client.post(
+        f"/v1/vehicles/{vehicle.json()['id']}/populate",
         json={"registration_number": "TN09AB4321"},
         headers=headers,
     )
-    assert verified.status_code == 200
-    assert verified.json()["registration_number"] == "TN09AB4321"
-    assert verified.json()["vehicle_status"] == "VERIFIED"
-    assert verified.json()["fuel_type"] == "DIESEL"
+    assert populated.status_code == 200
+    assert populated.json()["registration_number"] == "TN09AB4321"
+    assert populated.json()["vehicle_status"] == "READY_FOR_REVIEW"
+    assert populated.json()["fuel_type"] == "DIESEL"
 
 
-async def test_batch_verify_by_vehicle_ids(client) -> None:
+async def test_batch_populate_by_vehicle_ids(client) -> None:
     tenant = await _create_tenant(client, "Batch Co")
     headers = _headers(tenant["id"])
     fleet = await client.post("/v1/fleets", json={"name": "Fleet"}, headers=headers)
@@ -87,13 +112,14 @@ async def test_batch_verify_by_vehicle_ids(client) -> None:
     )
     missing = str(uuid4())
     response = await client.post(
-        "/v1/vehicles/verify-batch",
+        "/v1/vehicles/populate-batch",
         json={"vehicle_ids": [first.json()["id"], second.json()["id"], missing]},
         headers=headers,
     )
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["requested"] == 3
+    assert body["populated"] == 1
     assert body["verified"] == 1
     assert body["failed"] == 2
     by_id = {item["vehicle_id"]: item for item in body["results"]}
@@ -104,7 +130,7 @@ async def test_batch_verify_by_vehicle_ids(client) -> None:
     assert by_id[missing]["ok"] is False
 
 
-async def test_verification_failure_goes_to_manual_review(client) -> None:
+async def test_populate_failure_goes_to_manual_review_then_can_be_rejected(client) -> None:
     tenant = await _create_tenant(client, "Fail Co")
     headers = _headers(tenant["id"])
     fleet = await client.post("/v1/fleets", json={"name": "Fleet"}, headers=headers)
@@ -113,13 +139,20 @@ async def test_verification_failure_goes_to_manual_review(client) -> None:
         json={"fleet_id": fleet.json()["id"], "registration_number": "KA01FAIL99"},
         headers=headers,
     )
-    verified = await client.post(
-        f"/v1/vehicles/{vehicle.json()['id']}/verify",
+    populated = await client.post(
+        f"/v1/vehicles/{vehicle.json()['id']}/populate",
         json={},
         headers=headers,
     )
-    assert verified.status_code == 200
-    assert verified.json()["vehicle_status"] == "MANUAL_REVIEW"
+    assert populated.status_code == 200
+    assert populated.json()["vehicle_status"] == "MANUAL_REVIEW"
+    rejected = await client.post(
+        f"/v1/vehicles/{vehicle.json()['id']}/review",
+        json={"decision": "REJECT"},
+        headers=headers,
+    )
+    assert rejected.status_code == 200
+    assert rejected.json()["vehicle_status"] == "REJECTED"
 
 
 async def test_duplicate_registration_conflict(client) -> None:
@@ -140,7 +173,7 @@ async def test_duplicate_registration_conflict(client) -> None:
     assert duplicate.status_code == 409
 
 
-async def test_invalid_state_conflict_on_second_verify(client) -> None:
+async def test_invalid_state_conflict_on_second_populate(client) -> None:
     tenant = await _create_tenant(client, "State Co")
     headers = _headers(tenant["id"])
     fleet = await client.post("/v1/fleets", json={"name": "Fleet"}, headers=headers)
@@ -150,13 +183,13 @@ async def test_invalid_state_conflict_on_second_verify(client) -> None:
         headers=headers,
     )
     first = await client.post(
-        f"/v1/vehicles/{vehicle.json()['id']}/verify",
+        f"/v1/vehicles/{vehicle.json()['id']}/populate",
         json={},
         headers=headers,
     )
     assert first.status_code == 200
     second = await client.post(
-        f"/v1/vehicles/{vehicle.json()['id']}/verify",
+        f"/v1/vehicles/{vehicle.json()['id']}/populate",
         json={},
         headers=headers,
     )

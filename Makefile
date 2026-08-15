@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test migrate migrate-down seed-taxonomy seed-rules up down logs
+.PHONY: install lint format typecheck test migrate migrate-down seed-taxonomy seed-rules up down logs mock-api-setu
 
 PYTHON ?= python3
 
@@ -40,3 +40,6 @@ down:
 
 logs:
 	docker compose --env-file .env logs -f api
+
+mock-api-setu:
+	PYTHONPATH=src .venv/bin/python scripts/run_mock_api_setu.py

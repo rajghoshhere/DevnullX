@@ -77,17 +77,40 @@ Tenant isolation is mandatory.
 
 ## 5. Vehicle Onboarding Workflow
 
+Operators do not type RC fields. They create a draft with a fleet and registration number, populate from the vehicle provider and rules, then review the result.
+
 ```text
-Create Draft
- -> Capture Registration
- -> Submit Verification
- -> External API Verification
- -> Persist Raw Response
- -> Normalize
- -> Apply Rules
- -> Validate Documents
- -> Approve / Manual Review / Reject
+Create DRAFT (fleet + registration number)
+ -> POST /v1/vehicles/{id}/populate
+ -> Provider lookup (API Setu or fake/mock)
+ -> Persist canonical attributes
+ -> Apply deterministic rules
+ -> READY_FOR_REVIEW  (provider + rules succeeded)
+    or MANUAL_REVIEW  (provider failed; retry populate is allowed)
+ -> Human review: APPROVE or REJECT
 ```
+
+Realtime populate:
+
+```text
+POST /v1/vehicles/{vehicle_id}/populate
+```
+
+Batch populate (bulk-upload follow-up; max 100 ids; one failure does not abort the batch):
+
+```text
+POST /v1/vehicles/populate-batch
+{ "vehicle_ids": ["..."] }
+```
+
+Human review:
+
+```text
+POST /v1/vehicles/{vehicle_id}/review
+{ "decision": "APPROVE" | "REJECT" }
+```
+
+`/verify` and `/verify-batch` remain as aliases of populate.
 
 Vehicle states:
 - DRAFT
@@ -100,6 +123,8 @@ Vehicle states:
 - APPROVED
 - REJECTED
 - SUSPENDED
+
+Populate chains DRAFT → SUBMITTED → VERIFICATION_PENDING, then either MANUAL_REVIEW or VERIFIED → ENRICHMENT_PENDING → READY_FOR_REVIEW. Humans decide from READY_FOR_REVIEW or MANUAL_REVIEW.
 
 Transitions must be controlled and auditable.
 
@@ -325,6 +350,9 @@ POST   /v1/vehicles
 GET    /v1/vehicles/{vehicle_id}
 PATCH  /v1/vehicles/{vehicle_id}
 
+POST   /v1/vehicles/{vehicle_id}/populate
+POST   /v1/vehicles/populate-batch
+POST   /v1/vehicles/{vehicle_id}/review
 POST   /v1/vehicles/{vehicle_id}/verify
 GET    /v1/vehicles/{vehicle_id}/verification
 

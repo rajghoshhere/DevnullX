@@ -43,6 +43,26 @@ curl http://localhost:8000/health
 
 Expected: `{"status":"ok"}`.
 
+Compose also starts a mock API Setu service on `http://localhost:8099`. To populate vehicles from it instead of the in-process fake:
+
+```bash
+# in .env
+VEHICLE_VERIFICATION_PROVIDER=api_setu
+API_SETU_BASE_URL=http://mock-api-setu:8099/vahan/rc
+API_SETU_API_KEY=test-api-key
+API_SETU_CLIENT_ID=test-client
+```
+
+Host-only mock (no Compose for the mock):
+
+```bash
+make mock-api-setu
+```
+
+Then set `API_SETU_BASE_URL=http://127.0.0.1:8099/vahan/rc` on the API process. Registrations containing `FAIL` return a provider error XML so you can exercise `MANUAL_REVIEW`.
+
+Onboarding flow: create a tenant, fleet, and vehicle (registration number only), `POST /v1/vehicles/{id}/populate`, then `POST /v1/vehicles/{id}/review` with `APPROVE` or `REJECT`. Tenant-scoped routes require `X-Tenant-ID`.
+
 Stop:
 
 ```bash

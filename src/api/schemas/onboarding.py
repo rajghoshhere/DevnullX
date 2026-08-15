@@ -76,6 +76,7 @@ class VehicleResponse(BaseModel):
     vehicle_status: VehicleStatus
     created_at: datetime
     updated_at: datetime
+    derived_attributes: dict[str, str] = Field(default_factory=dict)
 
 
 class SubmitVehicleRequest(BaseModel):
@@ -95,6 +96,18 @@ class BatchVerifyItemResponse(BaseModel):
 
 class BatchVerifyResponse(BaseModel):
     requested: int
-    verified: int
+    populated: int = 0
+    verified: int = 0
     failed: int
     results: list[BatchVerifyItemResponse]
+
+
+class ReviewVehicleRequest(BaseModel):
+    decision: str = Field(min_length=1)
+
+
+def vehicle_to_response(
+    vehicle: object, derived_attributes: dict[str, str] | None = None
+) -> VehicleResponse:
+    payload = VehicleResponse.model_validate(vehicle)
+    return payload.model_copy(update={"derived_attributes": derived_attributes or {}})

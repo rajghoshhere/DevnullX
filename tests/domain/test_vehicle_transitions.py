@@ -82,6 +82,7 @@ def test_same_status_is_not_allowed() -> None:
         (VehicleStatus.MANUAL_REVIEW, VehicleStatus.APPROVED),
         (VehicleStatus.MANUAL_REVIEW, VehicleStatus.REJECTED),
         (VehicleStatus.MANUAL_REVIEW, VehicleStatus.DRAFT),
+        (VehicleStatus.MANUAL_REVIEW, VehicleStatus.VERIFICATION_PENDING),
         (VehicleStatus.APPROVED, VehicleStatus.SUSPENDED),
         (VehicleStatus.REJECTED, VehicleStatus.DRAFT),
         (VehicleStatus.SUSPENDED, VehicleStatus.APPROVED),

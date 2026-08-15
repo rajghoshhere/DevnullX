@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from adapters.postgres.fleet_owner_repository import PostgresFleetOwnerRepository
 from adapters.postgres.fleet_repository import PostgresFleetRepository
+from adapters.postgres.rule_repository import PostgresProvenanceRepository, PostgresRuleRepository
 from adapters.postgres.session import get_db_session
 from adapters.postgres.tenant_repository import PostgresTenantRepository
 from adapters.postgres.vehicle_repository import PostgresVehicleRepository
@@ -20,13 +21,16 @@ from application.commands.create_fleet import CreateFleet
 from application.commands.create_fleet_owner import CreateFleetOwner
 from application.commands.create_tenant import CreateTenant
 from application.commands.create_vehicle import CreateVehicle
-from application.commands.submit_vehicle_for_verification import SubmitVehicleForVerification
-from application.commands.verify_vehicles_batch import VerifyVehiclesBatch
+from application.commands.populate_vehicle import PopulateVehicle
+from application.commands.populate_vehicles_batch import PopulateVehiclesBatch
+from application.commands.review_vehicle import ReviewVehicle
 from application.queries.get_onboarding import GetFleet, GetFleetOwner, GetVehicle
 from config.settings import get_settings
 from ports.repositories import (
     FleetOwnerRepository,
     FleetRepository,
+    ProvenanceRepository,
+    RuleRepository,
     TenantRepository,
     VehicleRepository,
 )
@@ -50,6 +54,14 @@ async def get_fleet_repository(session: DbSession) -> AsyncIterator[FleetReposit
 
 async def get_vehicle_repository(session: DbSession) -> AsyncIterator[VehicleRepository]:
     yield PostgresVehicleRepository(session)
+
+
+async def get_rule_repository(session: DbSession) -> AsyncIterator[RuleRepository]:
+    yield PostgresRuleRepository(session)
+
+
+async def get_provenance_repository(session: DbSession) -> AsyncIterator[ProvenanceRepository]:
+    yield PostgresProvenanceRepository(session)
 
 
 _object_storage = InMemoryObjectStorage()
@@ -100,21 +112,35 @@ def get_create_vehicle(
     return CreateVehicle(tenants, fleets, vehicles)
 
 
-def get_submit_vehicle(
+def get_populate_vehicle(
     vehicles: VehicleRepository = Depends(get_vehicle_repository),
     provider: VehicleVerificationProvider = Depends(get_verification_provider),
-) -> SubmitVehicleForVerification:
-    return SubmitVehicleForVerification(vehicles, provider)
+    rules: RuleRepository = Depends(get_rule_repository),
+    provenance: ProvenanceRepository = Depends(get_provenance_repository),
+) -> PopulateVehicle:
+    return PopulateVehicle(vehicles, provider, rules, provenance)
 
 
-SubmitVehicleUseCase = Annotated[SubmitVehicleForVerification, Depends(get_submit_vehicle)]
+PopulateVehicleUseCase = Annotated[PopulateVehicle, Depends(get_populate_vehicle)]
 
 
-def get_verify_batch(submit: SubmitVehicleUseCase) -> VerifyVehiclesBatch:
-    return VerifyVehiclesBatch(submit)
+def get_populate_batch(populate: PopulateVehicleUseCase) -> PopulateVehiclesBatch:
+    return PopulateVehiclesBatch(populate)
 
 
-VerifyBatchUseCase = Annotated[VerifyVehiclesBatch, Depends(get_verify_batch)]
+PopulateBatchUseCase = Annotated[PopulateVehiclesBatch, Depends(get_populate_batch)]
+
+
+def get_review_vehicle(
+    vehicles: VehicleRepository = Depends(get_vehicle_repository),
+) -> ReviewVehicle:
+    return ReviewVehicle(vehicles)
+
+
+ReviewVehicleUseCase = Annotated[ReviewVehicle, Depends(get_review_vehicle)]
+
+
+ProvenanceStore = Annotated[ProvenanceRepository, Depends(get_provenance_repository)]
 
 
 def get_fleet_owner(

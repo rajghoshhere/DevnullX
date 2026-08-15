@@ -23,6 +23,10 @@ services:
       APP_ENV: ${APP_ENV:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      VEHICLE_VERIFICATION_PROVIDER: ${VEHICLE_VERIFICATION_PROVIDER:-fake}
+      API_SETU_BASE_URL: ${API_SETU_BASE_URL:-}
+      API_SETU_API_KEY: ${API_SETU_API_KEY:-}
+      API_SETU_CLIENT_ID: ${API_SETU_CLIENT_ID:-}
     depends_on:
       db:
         condition: service_healthy
@@ -38,6 +42,28 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
+
+  mock-api-setu:
+    build: .
+    entrypoint: ["python", "/app/scripts/run_mock_api_setu.py"]
+    ports:
+      - "${MOCK_API_SETU_PORT:-8099}:8099"
+    environment:
+      MOCK_API_SETU_API_KEY: ${MOCK_API_SETU_API_KEY:-test-api-key}
+      MOCK_API_SETU_HOST: 0.0.0.0
+      MOCK_API_SETU_PORT: "8099"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:
