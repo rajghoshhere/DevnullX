@@ -3,15 +3,17 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 
 from api.dependencies import (
+    PopulateBatchUseCase,
+    PopulateVehicleUseCase,
+    ProvenanceStore,
+    ReviewVehicleUseCase,
     TenantId,
-    VerifyBatchUseCase,
     get_create_fleet,
     get_create_fleet_owner,
     get_create_tenant,
     get_create_vehicle,
     get_fleet_owner,
     get_fleet_query,
-    get_submit_vehicle,
     get_vehicle_query,
 )
 from api.schemas.onboarding import (
@@ -21,20 +23,29 @@ from api.schemas.onboarding import (
     FleetOwnerResponse,
     FleetResponse,
     NamedCreateRequest,
+    ReviewVehicleRequest,
     SubmitVehicleRequest,
     TenantCreateRequest,
     TenantResponse,
     VehicleCreateRequest,
     VehicleResponse,
+    vehicle_to_response,
 )
 from application.commands.create_fleet import CreateFleet
 from application.commands.create_fleet_owner import CreateFleetOwner
 from application.commands.create_tenant import CreateTenant
 from application.commands.create_vehicle import CreateVehicle
-from application.commands.submit_vehicle_for_verification import SubmitVehicleForVerification
 from application.queries.get_onboarding import GetFleet, GetFleetOwner, GetVehicle
+from domain.vehicle.entities import Vehicle
+from ports.repositories import ProvenanceRepository
 
 router = APIRouter(prefix="/v1")
+
+
+async def _vehicle_payload(vehicle: Vehicle, provenance: ProvenanceRepository) -> VehicleResponse:
+    rows = await provenance.list_for_vehicle(vehicle.id)
+    derived = {row.attribute: row.value for row in rows}
+    return vehicle_to_response(vehicle, derived)
 
 
 @router.post("/tenants", response_model=TenantResponse, status_code=status.HTTP_201_CREATED)
@@ -93,29 +104,37 @@ async def create_vehicle(
     use_case: CreateVehicle = Depends(get_create_vehicle),
 ) -> VehicleResponse:
     vehicle = await use_case.execute(tenant_id=tenant_id, **payload.model_dump())
-    return VehicleResponse.model_validate(vehicle)
+    return vehicle_to_response(vehicle)
 
 
-@router.post("/vehicles/verify-batch", response_model=BatchVerifyResponse)
-async def verify_vehicles_batch(
+@router.post("/vehicles/populate-batch", response_model=BatchVerifyResponse)
+@router.post("/vehicles/verify-batch", response_model=BatchVerifyResponse, include_in_schema=False)
+async def populate_vehicles_batch(
     payload: BatchVerifyRequest,
     tenant_id: TenantId,
-    use_case: VerifyBatchUseCase,
+    use_case: PopulateBatchUseCase,
+    provenance: ProvenanceStore,
 ) -> BatchVerifyResponse:
     result = await use_case.execute(tenant_id=tenant_id, vehicle_ids=payload.vehicle_ids)
-    return BatchVerifyResponse(
-        requested=result.requested,
-        verified=result.verified,
-        failed=result.failed,
-        results=[
+    items: list[BatchVerifyItemResponse] = []
+    for item in result.items:
+        vehicle_payload = None
+        if item.vehicle is not None:
+            vehicle_payload = await _vehicle_payload(item.vehicle, provenance)
+        items.append(
             BatchVerifyItemResponse(
                 vehicle_id=item.vehicle_id,
                 ok=item.ok,
                 detail=item.detail,
-                vehicle=VehicleResponse.model_validate(item.vehicle) if item.vehicle else None,
+                vehicle=vehicle_payload,
             )
-            for item in result.items
-        ],
+        )
+    return BatchVerifyResponse(
+        requested=result.requested,
+        populated=result.populated,
+        verified=result.populated,
+        failed=result.failed,
+        results=items,
     )
 
 
@@ -123,18 +142,25 @@ async def verify_vehicles_batch(
 async def get_vehicle(
     vehicle_id: UUID,
     tenant_id: TenantId,
+    provenance: ProvenanceStore,
     use_case: GetVehicle = Depends(get_vehicle_query),
 ) -> VehicleResponse:
     vehicle = await use_case.execute(tenant_id=tenant_id, vehicle_id=vehicle_id)
-    return VehicleResponse.model_validate(vehicle)
+    return await _vehicle_payload(vehicle, provenance)
 
 
-@router.post("/vehicles/{vehicle_id}/verify", response_model=VehicleResponse)
-async def submit_vehicle_for_verification(
+@router.post("/vehicles/{vehicle_id}/populate", response_model=VehicleResponse)
+@router.post(
+    "/vehicles/{vehicle_id}/verify",
+    response_model=VehicleResponse,
+    include_in_schema=False,
+)
+async def populate_vehicle(
     vehicle_id: UUID,
     tenant_id: TenantId,
+    use_case: PopulateVehicleUseCase,
+    provenance: ProvenanceStore,
     payload: SubmitVehicleRequest | None = None,
-    use_case: SubmitVehicleForVerification = Depends(get_submit_vehicle),
 ) -> VehicleResponse:
     body = payload or SubmitVehicleRequest()
     vehicle = await use_case.execute(
@@ -142,4 +168,20 @@ async def submit_vehicle_for_verification(
         vehicle_id=vehicle_id,
         registration_number=body.registration_number,
     )
-    return VehicleResponse.model_validate(vehicle)
+    return await _vehicle_payload(vehicle, provenance)
+
+
+@router.post("/vehicles/{vehicle_id}/review", response_model=VehicleResponse)
+async def review_vehicle(
+    vehicle_id: UUID,
+    tenant_id: TenantId,
+    payload: ReviewVehicleRequest,
+    use_case: ReviewVehicleUseCase,
+    provenance: ProvenanceStore,
+) -> VehicleResponse:
+    vehicle = await use_case.execute(
+        tenant_id=tenant_id,
+        vehicle_id=vehicle_id,
+        decision=payload.decision,
+    )
+    return await _vehicle_payload(vehicle, provenance)

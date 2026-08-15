@@ -1,5 +1,8 @@
+from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
+from domain.enrichment.models import Rule, VehicleAttributeProvenance
 from domain.fleet.entities import Fleet
 from domain.owner.entities import FleetOwner
 from domain.tenant.entities import Tenant
@@ -71,6 +74,30 @@ class InMemoryVehicleRepository:
             raise ValueError("vehicle not found")
         self.items[vehicle.id] = vehicle
         return vehicle
+
+
+class InMemoryRuleRepository:
+    def __init__(self, rules: Sequence[Rule] | None = None) -> None:
+        self.items: list[Rule] = list(rules or [])
+
+    async def add(self, rule: Rule) -> Rule:
+        self.items.append(rule)
+        return rule
+
+    async def list_effective(self, *, at: datetime) -> Sequence[Rule]:
+        return [rule for rule in self.items if rule.is_effective_at(at)]
+
+
+class InMemoryProvenanceRepository:
+    def __init__(self) -> None:
+        self.items: list[VehicleAttributeProvenance] = []
+
+    async def add(self, row: VehicleAttributeProvenance) -> VehicleAttributeProvenance:
+        self.items.append(row)
+        return row
+
+    async def list_for_vehicle(self, vehicle_id: UUID) -> Sequence[VehicleAttributeProvenance]:
+        return [row for row in self.items if row.vehicle_id == vehicle_id]
 
 
 async def seed_tenant_and_fleet(

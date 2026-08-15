@@ -23,7 +23,5 @@ def register_error_handlers(application: FastAPI) -> None:
         return JSONResponse(status_code=409, content={"detail": str(exc)})
 
     @application.exception_handler(InvalidVehicleTransition)
-    async def invalid_transition(
-        _request: Request, exc: InvalidVehicleTransition
-    ) -> JSONResponse:
+    async def invalid_transition(_request: Request, exc: InvalidVehicleTransition) -> JSONResponse:
         return JSONResponse(status_code=409, content={"detail": str(exc)})

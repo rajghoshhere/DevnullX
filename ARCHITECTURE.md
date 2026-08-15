@@ -306,56 +306,50 @@ Every derived attribute stores rule ID, version, source, and confidence.
 ## 11. Onboarding Workflow
 
 ```text
-DRAFT
+DRAFT  (fleet + registration number)
   |
-SUBMITTED
+populate (provider + rules)
   |
-VERIFICATION_PENDING
-  |
-  +----> VERIFICATION_FAILED
+  +----> MANUAL_REVIEW  (provider failed; retry populate allowed)
   |              |
   |              v
-  |        MANUAL_REVIEW
-  |
-VERIFIED
-  |
-ENRICHMENT_PENDING
+  |        APPROVED / REJECTED
   |
 READY_FOR_REVIEW
   |
-APPROVED
+APPROVED / REJECTED
 ```
 
-External verification is asynchronous.
+Internal populate chain (not a human step):
+
+```text
+DRAFT -> SUBMITTED -> VERIFICATION_PENDING
+  -> VERIFIED -> ENRICHMENT_PENDING -> READY_FOR_REVIEW
+```
+
+or `VERIFICATION_PENDING -> MANUAL_REVIEW`.
 
 Example:
 
 ```text
-POST /vehicles/{id}/verify
+POST /v1/vehicles/{id}/populate
         |
         v
-Set VERIFICATION_PENDING
+Vehicle provider (API Setu adapter, fake, or local mock)
         |
         v
-Queue message
+Canonical attributes on the vehicle
         |
         v
-Worker
+Rule engine + provenance
         |
         v
-API Setu
-        |
-        v
-Persist raw
-        |
-        v
-Normalize + Rules
-        |
-        v
-Update vehicle
+READY_FOR_REVIEW or MANUAL_REVIEW
+
+POST /v1/vehicles/{id}/review  { "decision": "APPROVE" | "REJECT" }
 ```
 
-API returns immediately with `VERIFICATION_PENDING`.
+Domain and application layers never see API Setu XML. The HTTP adapter maps `rc_*` tags to `VerifiedVehicleAttributes`. A local mock server (`scripts/run_mock_api_setu.py`) speaks the same XML contract for testing.
 
 ## 12. Idempotency
 
