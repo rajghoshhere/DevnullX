@@ -2,14 +2,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 
-from application.commands.create_fleet import CreateFleet
-from application.commands.create_fleet_owner import CreateFleetOwner
-from application.commands.create_tenant import CreateTenant
-from application.commands.create_vehicle import CreateVehicle
-from application.commands.submit_vehicle_for_verification import SubmitVehicleForVerification
-from application.queries.get_onboarding import GetFleet, GetFleetOwner, GetVehicle
 from api.dependencies import (
     TenantId,
+    VerifyBatchUseCase,
     get_create_fleet,
     get_create_fleet_owner,
     get_create_tenant,
@@ -20,6 +15,9 @@ from api.dependencies import (
     get_vehicle_query,
 )
 from api.schemas.onboarding import (
+    BatchVerifyItemResponse,
+    BatchVerifyRequest,
+    BatchVerifyResponse,
     FleetOwnerResponse,
     FleetResponse,
     NamedCreateRequest,
@@ -29,6 +27,12 @@ from api.schemas.onboarding import (
     VehicleCreateRequest,
     VehicleResponse,
 )
+from application.commands.create_fleet import CreateFleet
+from application.commands.create_fleet_owner import CreateFleetOwner
+from application.commands.create_tenant import CreateTenant
+from application.commands.create_vehicle import CreateVehicle
+from application.commands.submit_vehicle_for_verification import SubmitVehicleForVerification
+from application.queries.get_onboarding import GetFleet, GetFleetOwner, GetVehicle
 
 router = APIRouter(prefix="/v1")
 
@@ -90,6 +94,29 @@ async def create_vehicle(
 ) -> VehicleResponse:
     vehicle = await use_case.execute(tenant_id=tenant_id, **payload.model_dump())
     return VehicleResponse.model_validate(vehicle)
+
+
+@router.post("/vehicles/verify-batch", response_model=BatchVerifyResponse)
+async def verify_vehicles_batch(
+    payload: BatchVerifyRequest,
+    tenant_id: TenantId,
+    use_case: VerifyBatchUseCase,
+) -> BatchVerifyResponse:
+    result = await use_case.execute(tenant_id=tenant_id, vehicle_ids=payload.vehicle_ids)
+    return BatchVerifyResponse(
+        requested=result.requested,
+        verified=result.verified,
+        failed=result.failed,
+        results=[
+            BatchVerifyItemResponse(
+                vehicle_id=item.vehicle_id,
+                ok=item.ok,
+                detail=item.detail,
+                vehicle=VehicleResponse.model_validate(item.vehicle) if item.vehicle else None,
+            )
+            for item in result.items
+        ],
+    )
 
 
 @router.get("/vehicles/{vehicle_id}", response_model=VehicleResponse)

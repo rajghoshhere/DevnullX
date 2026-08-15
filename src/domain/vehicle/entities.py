@@ -9,6 +9,7 @@ from domain.vehicle.exceptions import InvalidVehicleTransition
 from domain.vehicle.registration import normalize_registration_number
 from domain.vehicle.states import VehicleStatus
 from domain.vehicle.transitions import can_transition
+from domain.verification.types import VerifiedVehicleAttributes
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,3 +89,27 @@ class Vehicle:
         if not self.registration_number:
             raise ValueError("registration number is required to submit a vehicle")
         return self.transition_to(VehicleStatus.SUBMITTED)
+
+    def apply_verified_attributes(self, attributes: VerifiedVehicleAttributes) -> Vehicle:
+        return replace(
+            self,
+            registration_date=attributes.registration_date or self.registration_date,
+            manufacturing_month_year=(
+                attributes.manufacturing_month_year or self.manufacturing_month_year
+            ),
+            gvw_kg=attributes.gvw_kg if attributes.gvw_kg is not None else self.gvw_kg,
+            unladen_weight_kg=(
+                attributes.unladen_weight_kg
+                if attributes.unladen_weight_kg is not None
+                else self.unladen_weight_kg
+            ),
+            engine_cc=attributes.engine_cc if attributes.engine_cc is not None else self.engine_cc,
+            cylinder_count=(
+                attributes.cylinder_count
+                if attributes.cylinder_count is not None
+                else self.cylinder_count
+            ),
+            fuel_type=attributes.fuel_type or self.fuel_type,
+            body_type=attributes.body_type or self.body_type,
+            updated_at=utc_now(),
+        )

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
+from datetime import date, datetime
 from xml.etree.ElementTree import ParseError, fromstring
 from xml.sax.saxutils import escape
 
 import httpx
 
-from domain.verification.types import VehicleVerificationResult, VerificationContext
+from domain.verification.types import (
+    VehicleVerificationResult,
+    VerificationContext,
+    VerifiedVehicleAttributes,
+)
 from ports.storage import ObjectStorage
 
 PROVIDER_NAME = "api_setu"
@@ -55,6 +60,72 @@ def _local_name(tag: str) -> str:
 
 def _provider_status(fields: dict[str, str]) -> str:
     return (fields.get("statusMessage") or fields.get("stautsMessage") or "").strip().upper()
+
+
+def canonical_attributes_from_fields(fields: dict[str, str]) -> VerifiedVehicleAttributes:
+    """Map API Setu XML tags to canonical attributes. Not used outside this adapter."""
+    return VerifiedVehicleAttributes(
+        registration_date=_parse_date(fields.get("rc_regn_dt")),
+        manufacturing_month_year=_parse_month_year(fields.get("rc_manu_month_yr")),
+        gvw_kg=_parse_int(fields.get("rc_gvw")),
+        unladen_weight_kg=_parse_int(fields.get("rc_unld_wt")),
+        engine_cc=_parse_int(fields.get("rc_cubic_cap")),
+        cylinder_count=_parse_int(fields.get("rc_no_cyl")),
+        fuel_type=_normalize_label(fields.get("rc_fuel_desc")),
+        body_type=_body_type(fields.get("rc_body_type_desc")),
+    )
+
+
+def _normalize_label(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped.upper() if stripped else None
+
+
+def _body_type(value: str | None) -> str | None:
+    label = _normalize_label(value)
+    if label is None:
+        return None
+    if "OPEN" in label:
+        return "OPEN"
+    if "CLOSED" in label or "CONTAINER" in label or "BOX" in label:
+        return "CLOSED"
+    if "TANKER" in label:
+        return "TANKER"
+    if "TIPPER" in label:
+        return "TIPPER"
+    return label
+
+
+def _parse_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    for fmt in ("%d-%b-%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_month_year(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        month_text, year_text = value.split("/", maxsplit=1)
+        return date(int(year_text), int(month_text), 1)
+    except ValueError:
+        return None
+
+
+def _parse_int(value: str | None) -> int | None:
+    if not value:
+        return None
+    try:
+        return int(float(value))
+    except ValueError:
+        return None
 
 
 class ApiSetuVehicleVerificationProvider:
@@ -213,7 +284,12 @@ class ApiSetuVehicleVerificationProvider:
                 error_code="API_SETU_INCOMPLETE_RESPONSE",
                 raw_object_key=raw_object_key,
             )
-        return self._result(context, success=True, raw_object_key=raw_object_key)
+        return self._result(
+            context,
+            success=True,
+            raw_object_key=raw_object_key,
+            attributes=canonical_attributes_from_fields(fields),
+        )
 
     @staticmethod
     def _result(
@@ -222,6 +298,7 @@ class ApiSetuVehicleVerificationProvider:
         success: bool,
         error_code: str | None = None,
         raw_object_key: str | None = None,
+        attributes: VerifiedVehicleAttributes | None = None,
     ) -> VehicleVerificationResult:
         return VehicleVerificationResult(
             success=success,
@@ -229,4 +306,5 @@ class ApiSetuVehicleVerificationProvider:
             correlation_id=context.correlation_id,
             raw_object_key=raw_object_key,
             error_code=error_code,
+            attributes=attributes,
         )

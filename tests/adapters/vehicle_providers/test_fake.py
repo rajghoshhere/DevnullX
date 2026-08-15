@@ -19,6 +19,9 @@ async def test_fake_provider_succeeds_by_default() -> None:
     assert result.success is True
     assert result.provider == "fake"
     assert result.error_code is None
+    assert result.attributes is not None
+    assert result.attributes.gvw_kg == 47500
+    assert result.attributes.fuel_type == "DIESEL"
 
 
 async def test_fake_provider_fails_when_registration_contains_fail() -> None:

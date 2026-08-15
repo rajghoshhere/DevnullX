@@ -12,3 +12,7 @@ class ConflictError(ApplicationError):
 
 class InvalidStateError(ApplicationError):
     pass
+
+
+class BatchValidationError(ApplicationError):
+    pass
