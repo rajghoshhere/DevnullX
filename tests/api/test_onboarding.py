@@ -46,6 +46,9 @@ async def test_onboarding_happy_path_reaches_verified(client) -> None:
 
     fetched = await client.get(f"/v1/vehicles/{vehicle.json()['id']}", headers=headers)
     assert fetched.json()["vehicle_status"] == "VERIFIED"
+    assert fetched.json()["fuel_type"] == "DIESEL"
+    assert fetched.json()["body_type"] == "OPEN"
+    assert fetched.json()["gvw_kg"] == 47500
 
 
 async def test_verify_captures_registration_in_request_body(client) -> None:
@@ -65,6 +68,40 @@ async def test_verify_captures_registration_in_request_body(client) -> None:
     assert verified.status_code == 200
     assert verified.json()["registration_number"] == "TN09AB4321"
     assert verified.json()["vehicle_status"] == "VERIFIED"
+    assert verified.json()["fuel_type"] == "DIESEL"
+
+
+async def test_batch_verify_by_vehicle_ids(client) -> None:
+    tenant = await _create_tenant(client, "Batch Co")
+    headers = _headers(tenant["id"])
+    fleet = await client.post("/v1/fleets", json={"name": "Fleet"}, headers=headers)
+    first = await client.post(
+        "/v1/vehicles",
+        json={"fleet_id": fleet.json()["id"], "registration_number": "MH12AB1111"},
+        headers=headers,
+    )
+    second = await client.post(
+        "/v1/vehicles",
+        json={"fleet_id": fleet.json()["id"], "registration_number": "MH12FAIL22"},
+        headers=headers,
+    )
+    missing = str(uuid4())
+    response = await client.post(
+        "/v1/vehicles/verify-batch",
+        json={"vehicle_ids": [first.json()["id"], second.json()["id"], missing]},
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["requested"] == 3
+    assert body["verified"] == 1
+    assert body["failed"] == 2
+    by_id = {item["vehicle_id"]: item for item in body["results"]}
+    assert by_id[first.json()["id"]]["ok"] is True
+    assert by_id[first.json()["id"]]["vehicle"]["fuel_type"] == "DIESEL"
+    assert by_id[second.json()["id"]]["ok"] is False
+    assert by_id[second.json()["id"]]["vehicle"]["vehicle_status"] == "MANUAL_REVIEW"
+    assert by_id[missing]["ok"] is False
 
 
 async def test_verification_failure_goes_to_manual_review(client) -> None:

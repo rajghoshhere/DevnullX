@@ -1,3 +1,4 @@
+from datetime import date
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,9 +10,14 @@ from adapters.vehicle_providers.api_setu import (
     ApiSetuClientConfig,
     ApiSetuParseError,
     ApiSetuVehicleVerificationProvider,
+    canonical_attributes_from_fields,
     parse_api_setu_xml,
 )
-from domain.verification.types import VehicleVerificationResult, VerificationContext
+from domain.verification.types import (
+    VehicleVerificationResult,
+    VerificationContext,
+    VerifiedVehicleAttributes,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 SAMPLE_RC_XML = (FIXTURES / "sample_rc.xml").read_text(encoding="utf-8")
@@ -99,6 +105,17 @@ def test_parse_sample_xml_extracts_rc_fields() -> None:
     assert fields["rc_status"] == "ACTIVE"
     assert "rc_chasi_no" in fields
     assert "rc_eng_no" in fields
+    attributes = canonical_attributes_from_fields(fields)
+    assert attributes == VerifiedVehicleAttributes(
+        registration_date=date(2022, 3, 15),
+        manufacturing_month_year=date(2022, 1, 1),
+        gvw_kg=47500,
+        unladen_weight_kg=12500,
+        engine_cc=6700,
+        cylinder_count=6,
+        fuel_type="DIESEL",
+        body_type="OPEN",
+    )
 
 
 def test_parse_rejects_invalid_xml() -> None:
@@ -126,6 +143,16 @@ async def test_successful_lookup_stores_raw_xml_and_returns_generic_result() -> 
             "/verification/corr-api-setu-1.xml"
         ),
         error_code=None,
+        attributes=VerifiedVehicleAttributes(
+            registration_date=date(2022, 3, 15),
+            manufacturing_month_year=date(2022, 1, 1),
+            gvw_kg=47500,
+            unladen_weight_kg=12500,
+            engine_cc=6700,
+            cylinder_count=6,
+            fuel_type="DIESEL",
+            body_type="OPEN",
+        ),
     )
     assert not hasattr(result, "rc_regn_no")
     assert not hasattr(result, "rc_maker_desc")

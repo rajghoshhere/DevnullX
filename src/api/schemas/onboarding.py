@@ -80,3 +80,21 @@ class VehicleResponse(BaseModel):
 
 class SubmitVehicleRequest(BaseModel):
     registration_number: str | None = None
+
+
+class BatchVerifyRequest(BaseModel):
+    vehicle_ids: list[UUID] = Field(min_length=1, max_length=100)
+
+
+class BatchVerifyItemResponse(BaseModel):
+    vehicle_id: UUID
+    ok: bool
+    detail: str | None = None
+    vehicle: VehicleResponse | None = None
+
+
+class BatchVerifyResponse(BaseModel):
+    requested: int
+    verified: int
+    failed: int
+    results: list[BatchVerifyItemResponse]

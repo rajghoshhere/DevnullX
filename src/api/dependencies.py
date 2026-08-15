@@ -10,13 +10,20 @@ from adapters.postgres.fleet_repository import PostgresFleetRepository
 from adapters.postgres.session import get_db_session
 from adapters.postgres.tenant_repository import PostgresTenantRepository
 from adapters.postgres.vehicle_repository import PostgresVehicleRepository
+from adapters.storage.memory import InMemoryObjectStorage
+from adapters.vehicle_providers.api_setu import (
+    ApiSetuClientConfig,
+    ApiSetuVehicleVerificationProvider,
+)
 from adapters.vehicle_providers.fake import FakeVehicleVerificationProvider
 from application.commands.create_fleet import CreateFleet
 from application.commands.create_fleet_owner import CreateFleetOwner
 from application.commands.create_tenant import CreateTenant
 from application.commands.create_vehicle import CreateVehicle
 from application.commands.submit_vehicle_for_verification import SubmitVehicleForVerification
+from application.commands.verify_vehicles_batch import VerifyVehiclesBatch
 from application.queries.get_onboarding import GetFleet, GetFleetOwner, GetVehicle
+from config.settings import get_settings
 from ports.repositories import (
     FleetOwnerRepository,
     FleetRepository,
@@ -45,7 +52,23 @@ async def get_vehicle_repository(session: DbSession) -> AsyncIterator[VehicleRep
     yield PostgresVehicleRepository(session)
 
 
+_object_storage = InMemoryObjectStorage()
+
+
 def get_verification_provider() -> VehicleVerificationProvider:
+    settings = get_settings()
+    if settings.vehicle_verification_provider == "api_setu":
+        return ApiSetuVehicleVerificationProvider(
+            config=ApiSetuClientConfig(
+                base_url=settings.api_setu_base_url,
+                api_key=settings.api_setu_api_key,
+                client_id=settings.api_setu_client_id,
+                timeout_seconds=settings.api_setu_timeout_seconds,
+                max_attempts=settings.api_setu_max_attempts,
+                backoff_seconds=settings.api_setu_backoff_seconds,
+            ),
+            storage=_object_storage,
+        )
     return FakeVehicleVerificationProvider()
 
 
@@ -82,6 +105,16 @@ def get_submit_vehicle(
     provider: VehicleVerificationProvider = Depends(get_verification_provider),
 ) -> SubmitVehicleForVerification:
     return SubmitVehicleForVerification(vehicles, provider)
+
+
+SubmitVehicleUseCase = Annotated[SubmitVehicleForVerification, Depends(get_submit_vehicle)]
+
+
+def get_verify_batch(submit: SubmitVehicleUseCase) -> VerifyVehiclesBatch:
+    return VerifyVehiclesBatch(submit)
+
+
+VerifyBatchUseCase = Annotated[VerifyVehiclesBatch, Depends(get_verify_batch)]
 
 
 def get_fleet_owner(

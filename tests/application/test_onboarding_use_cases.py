@@ -1,16 +1,6 @@
 from uuid import uuid4
 
 import pytest
-
-from adapters.vehicle_providers.fake import FakeVehicleVerificationProvider
-from application.commands.create_fleet import CreateFleet
-from application.commands.create_fleet_owner import CreateFleetOwner
-from application.commands.create_tenant import CreateTenant
-from application.commands.create_vehicle import CreateVehicle
-from application.commands.submit_vehicle_for_verification import SubmitVehicleForVerification
-from application.errors import ConflictError, InvalidStateError, NotFoundError
-from domain.tenant.entities import Tenant
-from domain.vehicle.states import VehicleStatus
 from tests.application.fakes import (
     InMemoryFleetOwnerRepository,
     InMemoryFleetRepository,
@@ -18,6 +8,17 @@ from tests.application.fakes import (
     InMemoryVehicleRepository,
     seed_tenant_and_fleet,
 )
+
+from adapters.vehicle_providers.fake import FakeVehicleVerificationProvider
+from application.commands.create_fleet import CreateFleet
+from application.commands.create_fleet_owner import CreateFleetOwner
+from application.commands.create_tenant import CreateTenant
+from application.commands.create_vehicle import CreateVehicle
+from application.commands.submit_vehicle_for_verification import SubmitVehicleForVerification
+from application.commands.verify_vehicles_batch import VerifyVehiclesBatch
+from application.errors import ConflictError, InvalidStateError, NotFoundError
+from domain.tenant.entities import Tenant
+from domain.vehicle.states import VehicleStatus
 
 
 async def test_create_tenant() -> None:
@@ -117,6 +118,12 @@ async def test_submit_vehicle_success_reaches_verified() -> None:
     )
     assert verified.vehicle_status is VehicleStatus.VERIFIED
     assert provider.calls[0][0] == "MH12AB1234"
+    assert verified.gvw_kg == 47500
+    assert verified.unladen_weight_kg == 12500
+    assert verified.engine_cc == 6700
+    assert verified.cylinder_count == 6
+    assert verified.fuel_type == "DIESEL"
+    assert verified.body_type == "OPEN"
 
 
 async def test_submit_vehicle_failure_goes_to_manual_review() -> None:
@@ -184,3 +191,29 @@ async def test_submit_missing_vehicle() -> None:
     )
     with pytest.raises(NotFoundError, match="vehicle"):
         await use_case.execute(tenant_id=uuid4(), vehicle_id=uuid4())
+
+
+async def test_batch_verify_populates_and_isolates_failures() -> None:
+    tenant, fleet, tenants, fleets = await seed_tenant_and_fleet()
+    vehicles = InMemoryVehicleRepository()
+    create = CreateVehicle(tenants, fleets, vehicles)
+    first = await create.execute(
+        tenant_id=tenant.id, fleet_id=fleet.id, registration_number="MH12AB1234"
+    )
+    second = await create.execute(
+        tenant_id=tenant.id, fleet_id=fleet.id, registration_number="KA01FAIL99"
+    )
+    result = await VerifyVehiclesBatch(
+        SubmitVehicleForVerification(vehicles, FakeVehicleVerificationProvider())
+    ).execute(tenant_id=tenant.id, vehicle_ids=[first.id, second.id, uuid4()])
+    assert result.requested == 3
+    assert result.verified == 1
+    assert result.failed == 2
+    by_id = {item.vehicle_id: item for item in result.items}
+    assert by_id[first.id].ok is True
+    assert by_id[first.id].vehicle is not None
+    assert by_id[first.id].vehicle.gvw_kg == 47500
+    assert by_id[second.id].ok is False
+    assert by_id[second.id].vehicle is not None
+    assert by_id[second.id].vehicle.vehicle_status is VehicleStatus.MANUAL_REVIEW
+

@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from domain.verification.types import VehicleVerificationResult, VerificationContext
+from datetime import date
+
+from domain.verification.types import (
+    VehicleVerificationResult,
+    VerificationContext,
+    VerifiedVehicleAttributes,
+)
 
 
 class FakeVehicleVerificationProvider:
@@ -23,4 +29,18 @@ class FakeVehicleVerificationProvider:
             correlation_id=context.correlation_id,
             raw_object_key=None,
             error_code="FAKE_VERIFICATION_FAILED" if failed else None,
+            attributes=None if failed else _demo_attributes(),
         )
+
+
+def _demo_attributes() -> VerifiedVehicleAttributes:
+    return VerifiedVehicleAttributes(
+        registration_date=date(2022, 3, 15),
+        manufacturing_month_year=date(2022, 1, 1),
+        gvw_kg=47500,
+        unladen_weight_kg=12500,
+        engine_cc=6700,
+        cylinder_count=6,
+        fuel_type="DIESEL",
+        body_type="OPEN",
+    )

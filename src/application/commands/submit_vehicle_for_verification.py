@@ -61,9 +61,9 @@ class SubmitVehicleForVerification:
                 registration_number=vehicle.registration_number,
             ),
         )
-        target = (
-            VehicleStatus.VERIFIED if result.success else VehicleStatus.MANUAL_REVIEW
-        )
+        if result.attributes is not None:
+            vehicle = vehicle.apply_verified_attributes(result.attributes)
+        target = VehicleStatus.VERIFIED if result.success else VehicleStatus.MANUAL_REVIEW
         try:
             vehicle = vehicle.transition_to(target)
         except InvalidVehicleTransition as error:

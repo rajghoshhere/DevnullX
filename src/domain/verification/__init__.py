@@ -1,3 +1,11 @@
-from domain.verification.types import VehicleVerificationResult, VerificationContext
+from domain.verification.types import (
+    VehicleVerificationResult,
+    VerificationContext,
+    VerifiedVehicleAttributes,
+)
 
-__all__ = ["VerificationContext", "VehicleVerificationResult"]
+__all__ = [
+    "VerificationContext",
+    "VerifiedVehicleAttributes",
+    "VehicleVerificationResult",
+]
